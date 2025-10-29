@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<<<<<<< HEAD
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -16,3 +17,21 @@
   </script>
 </body>
 </html>
+=======
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Launch My SMART App</title>
+  <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
+</head>
+<body>
+<script>
+FHIR.oauth2.authorize({
+  clientId: "my_web_app",
+  scope: "launch openid fhirUser patient/*.read",
+  redirectUri: "index.html"
+});
+</script>
+</body>
+</html>
+>>>>>>> 5ab1dea (update index.html for glucose/bp chart)

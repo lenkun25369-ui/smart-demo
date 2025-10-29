@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+<<<<<<< HEAD
   <title>SMART FHIR Demo Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -60,3 +61,113 @@
   </script>
 </body>
 </html>
+=======
+  <title>SMART FHIR Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h3 { margin-top: 40px; }
+    pre {
+      background: #f7f7f7;
+      border: 1px solid #ccc;
+      padding: 10px;
+      max-height: 40vh;
+      overflow: auto;
+      font-size: 13px;
+    }
+    #chartContainer {
+      width: 600px;
+      height: 300px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <h3>Current Patient</h3>
+  <pre id="patient">Loading...</pre>
+
+  <h3>Medications</h3>
+  <pre id="meds">Loading...</pre>
+
+  <h3>Recent Observations (e.g., Glucose / Blood Pressure)</h3>
+  <pre id="obs">Loading...</pre>
+  <div id="chartContainer">
+    <canvas id="obsChart"></canvas>
+  </div>
+
+  <script>
+  FHIR.oauth2.ready().then(async function(client) {
+    // 1️⃣ Patient
+    const patient = await client.patient.read();
+    document.getElementById("patient").innerText = JSON.stringify(patient, null, 2);
+
+    // 2️⃣ Medications
+    try {
+      const meds = await client.request(`/MedicationRequest?patient=${client.patient.id}`, {
+        resolveReferences: ["medicationReference"], graph: true
+      });
+      document.getElementById("meds").innerText = JSON.stringify(meds.entry || [], null, 2);
+    } catch (e) {
+      document.getElementById("meds").innerText = e.stack;
+    }
+
+    // 3️⃣ Observations (抓血糖或血壓為例)
+    try {
+      const obsBundle = await client.request(
+        `/Observation?patient=${client.patient.id}&_sort=-date&_count=20`
+      );
+
+      const observations = (obsBundle.entry || []).map(e => e.resource);
+      document.getElementById("obs").innerText = JSON.stringify(observations, null, 2);
+
+      // 過濾出可數值化的檢驗
+      const numericObs = observations.filter(o => 
+        o.valueQuantity && o.valueQuantity.value !== undefined
+      );
+
+      // 只顯示幾個常見項目
+      const targets = [ "pressure"];
+      const filtered = numericObs.filter(o => {
+        const text = (o.code.text || "").toLowerCase();
+        return targets.some(t => text.includes(t));
+      });
+
+      // 取值繪圖
+      const labels = filtered.map(o => o.effectiveDateTime || "N/A");
+      const values = filtered.map(o => o.valueQuantity.value);
+      const units  = filtered.length > 0 ? filtered[0].valueQuantity.unit : "";
+
+      // 4️⃣ Chart.js 畫圖
+      const ctx = document.getElementById("obsChart").getContext("2d");
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels.reverse(),
+          datasets: [{
+            label: `Recent Observation (${units})`,
+            data: values.reverse(),
+            fill: false,
+            borderColor: "rgb(75, 192, 192)",
+            tension: 0.1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: true } },
+          scales: {
+            x: { title: { display: true, text: "Date" } },
+            y: { title: { display: true, text: units } }
+          }
+        }
+      });
+    } catch (e) {
+      document.getElementById("obs").innerText = "Observation Error: " + e.stack;
+    }
+  }).catch(console.error);
+  </script>
+</body>
+</html>
+
+>>>>>>> 5ab1dea (update index.html for glucose/bp chart)
